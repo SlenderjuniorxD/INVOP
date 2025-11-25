@@ -36,7 +36,7 @@
             Guna.UI2.WinForms.Suite.CustomizableEdges customizableEdges6 = new Guna.UI2.WinForms.Suite.CustomizableEdges();
             pnlContenedor = new FlowLayoutPanel();
             guna2ComboBox1 = new Guna.UI2.WinForms.Guna2ComboBox();
-            guna2Button1 = new Guna.UI2.WinForms.Guna2Button();
+            btnCerrar = new Guna.UI2.WinForms.Guna2Button();
             guna2TextBox3 = new Guna.UI2.WinForms.Guna2TextBox();
             pnlContenedor.SuspendLayout();
             SuspendLayout();
@@ -45,7 +45,7 @@
             // 
             pnlContenedor.AutoScroll = true;
             pnlContenedor.Controls.Add(guna2ComboBox1);
-            pnlContenedor.Controls.Add(guna2Button1);
+            pnlContenedor.Controls.Add(btnCerrar);
             pnlContenedor.Controls.Add(guna2TextBox3);
             pnlContenedor.Dock = DockStyle.Fill;
             pnlContenedor.Location = new Point(0, 0);
@@ -72,21 +72,22 @@
             guna2ComboBox1.Size = new Size(108, 36);
             guna2ComboBox1.TabIndex = 2;
             // 
-            // guna2Button1
+            // btnCerrar
             // 
-            guna2Button1.CustomizableEdges = customizableEdges3;
-            guna2Button1.DisabledState.BorderColor = Color.DarkGray;
-            guna2Button1.DisabledState.CustomBorderColor = Color.DarkGray;
-            guna2Button1.DisabledState.FillColor = Color.FromArgb(169, 169, 169);
-            guna2Button1.DisabledState.ForeColor = Color.FromArgb(141, 141, 141);
-            guna2Button1.Font = new Font("Segoe UI", 9F);
-            guna2Button1.ForeColor = Color.White;
-            guna2Button1.Location = new Point(117, 3);
-            guna2Button1.Name = "guna2Button1";
-            guna2Button1.ShadowDecoration.CustomizableEdges = customizableEdges4;
-            guna2Button1.Size = new Size(54, 36);
-            guna2Button1.TabIndex = 4;
-            guna2Button1.Text = "X";
+            btnCerrar.CustomizableEdges = customizableEdges3;
+            btnCerrar.DisabledState.BorderColor = Color.DarkGray;
+            btnCerrar.DisabledState.CustomBorderColor = Color.DarkGray;
+            btnCerrar.DisabledState.FillColor = Color.FromArgb(169, 169, 169);
+            btnCerrar.DisabledState.ForeColor = Color.FromArgb(141, 141, 141);
+            btnCerrar.Font = new Font("Segoe UI", 9F);
+            btnCerrar.ForeColor = Color.White;
+            btnCerrar.Location = new Point(117, 3);
+            btnCerrar.Name = "btnCerrar";
+            btnCerrar.ShadowDecoration.CustomizableEdges = customizableEdges4;
+            btnCerrar.Size = new Size(54, 36);
+            btnCerrar.TabIndex = 4;
+            btnCerrar.Text = "X";
+            btnCerrar.Click += btnCerrar_Click;
             // 
             // guna2TextBox3
             // 
@@ -123,6 +124,6 @@
         private FlowLayoutPanel pnlContenedor;
         private Guna.UI2.WinForms.Guna2ComboBox guna2ComboBox1;
         private Guna.UI2.WinForms.Guna2TextBox guna2TextBox3;
-        private Guna.UI2.WinForms.Guna2Button guna2Button1;
+        private Guna.UI2.WinForms.Guna2Button btnCerrar;
     }
 }

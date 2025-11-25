@@ -10,10 +10,9 @@ namespace INVOP.Logica
     {
         public class PasoHungaro
         {
-            public string Titulo { get; set; }      // Ej: "Paso 1: Resta de Filas"
-            public double[,] Matriz { get; set; }   // La foto de los números
-            public string Descripcion { get; set; } // Explicación de qué se hizo
-
+            public string Titulo { get; set; }
+            public double[,] Matriz { get; set; }
+            public string Descripcion { get; set; }
             public List<int> FilasTachadas { get; set; } = new List<int>();
             public List<int> ColsTachadas { get; set; } = new List<int>();
         }
@@ -21,20 +20,18 @@ namespace INVOP.Logica
         {
             public List<PasoHungaro> Historial { get; set; } = new List<PasoHungaro>();
             public double CostoTotal { get; set; }
-            public List<string> Asignaciones { get; set; } = new List<string>(); // Ej: "Trabajador 1 -> Tarea 3"
+            public List<string> Asignaciones { get; set; } = new List<string>();
         }
         public class HungarianSolver
         {
             public ResultadoHungaro Resolver(double[,] matrizEntrada)
             {
                 var resultado = new ResultadoHungaro();
-
-                // 1. BALANCEO Y COPIA
                 double[,] matriz = BalancearMatriz(matrizEntrada, resultado);
                 int n = matriz.GetLength(0);
                 double[,] costosOriginales = CopiarMatriz(matriz);
 
-                // 2. REDUCCIÓN DE FILAS
+                //eliminar filas
                 for (int i = 0; i < n; i++)
                 {
                     double min = double.MaxValue;
@@ -43,7 +40,7 @@ namespace INVOP.Logica
                 }
                 resultado.Historial.Add(new PasoHungaro { Titulo = "Paso 1: Reducción de Filas", Matriz = CopiarMatriz(matriz), Descripcion = "Se restó el menor valor de cada fila." });
 
-                // 3. REDUCCIÓN DE COLUMNAS
+                //eliminar columnas
                 for (int j = 0; j < n; j++)
                 {
                     double min = double.MaxValue;
@@ -69,27 +66,24 @@ namespace INVOP.Logica
                     for (int i = 0; i < n; i++) if (filasCubiertas[i]) { numLineas++; indicesFilas.Add(i); }
                     for (int j = 0; j < n; j++) if (colsCubiertas[j]) { numLineas++; indicesCols.Add(j); }
 
-                    // --- GUARDAR PASO VISUAL DE LÍNEAS ---
-                    // Aquí guardamos la matriz tal cual está, pero indicando qué pintar
                     resultado.Historial.Add(new PasoHungaro
                     {
-                        Titulo = $"Iteración {iteracion}: Trazado de Líneas",
+                        Titulo = $"Iteracion {iteracion}: Trazado de Lineas",
                         Matriz = CopiarMatriz(matriz),
                         FilasTachadas = new List<int>(indicesFilas),
                         ColsTachadas = new List<int>(indicesCols)
                     });
 
-                    // CRITERIO DE PARADA: Si líneas == n, terminamos
+                    
                     if (numLineas == n)
                     {
-                        // Calcular asignación final visualizable
                         GenerarResultadoFinal(matriz, costosOriginales, resultado);
                         break;
                     }
 
-                    // B. AJUSTE (Valor K)
+                    //valor k
                     double k = double.MaxValue;
-                    // Buscar menor no cubierto
+                    //menor no cubierto
                     for (int i = 0; i < n; i++)
                     {
                         if (!filasCubiertas[i])
@@ -104,7 +98,7 @@ namespace INVOP.Logica
                         }
                     }
 
-                    // Aplicar K
+                    //k=?
                     for (int i = 0; i < n; i++)
                     {
                         for (int j = 0; j < n; j++)
@@ -127,10 +121,6 @@ namespace INVOP.Logica
 
                 return resultado;
             }
-
-            // --- MÉTODOS DE SOPORTE (KÖNIG Y OTROS) ---
-            // (Estos se mantienen igual que en la versión anterior que sí funcionaba matemáticamente)
-
             private void ObtenerLineasMinimas(double[,] matriz, int[] matchFila, out bool[] filasCubiertas, out bool[] colsCubiertas)
             {
                 int n = matriz.GetLength(0);
@@ -206,14 +196,15 @@ namespace INVOP.Logica
                 if (f == c) return CopiarMatriz(original);
                 int max = Math.Max(f, c);
                 double[,] cuadrada = new double[max, max];
-                for (int i = 0; i < f; i++) for (int j = 0; j < c; j++) cuadrada[i, j] = original[i, j];
+                for (int i = 0; i < f; i++) 
+                    for (int j = 0; j < c; j++) 
+                        cuadrada[i, j] = original[i, j];
                 res.Historial.Add(new PasoHungaro { Titulo = "Balanceo", Matriz = CopiarMatriz(cuadrada), Descripcion = "Se agregaron filas/columnas ficticias (ceros)." });
                 return cuadrada;
             }
 
             private void GenerarResultadoFinal(double[,] matrizFinal, double[,] costos, ResultadoHungaro res)
             {
-                // Usamos el algoritmo de asignación una última vez para sacar la lista limpia
                 int[] matchFila;
                 ObtenerAsignacion(matrizFinal, out matchFila);
 

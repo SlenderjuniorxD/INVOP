@@ -8,83 +8,80 @@ namespace INVOP.Logica
 {
     public class MSolver
     {
-        // Definimos M como un número muy grande, tal como acordamos (100 o 1000 es suficiente para ejercicios pequeños, 1M para software)
+
         private const double M = 100000;
-        private const int MAX_ITERACIONES = 100; // Para evitar bucles infinitos
+        private const int MAX_ITERACIONES = 100;
 
         public class ResultadoSimplex
         {
-            public List<DatosIteracion> Historial { get; set; } = new List<DatosIteracion>(); // <--- NUEVO
-            public List<string> Pasos { get; set; } = new List<string>(); // Bitácora de lo que pasó
+            public List<DatosIteracion> Historial { get; set; } = new List<DatosIteracion>();
             public double ValorZ { get; set; }
             public double[] VariablesDecision { get; set; }
             public bool EsFactible { get; set; }
             public string MensajeError { get; set; }
         }
-        public ResultadoSimplex Resolver(List<double> funcionZ, List<(List<double> coefs, string signo, double rhs)> restricciones, bool esMinimizar)
+        public ResultadoSimplex Resolver(List<double> funcionZ, List<(List<double> coefs, string signo, double ld)> restricciones, bool esMinimizar)
         {
             var resultado = new ResultadoSimplex();
             int numVarsOriginales = funcionZ.Count;
             int numRestricciones = restricciones.Count;
 
-            // ---------------------------------------------------------
-            // PASO 1: CONFIGURACIÓN DE COLUMNAS Y VARIABLES
-            // ---------------------------------------------------------
             List<string> nombresCols = new List<string>();
 
-            // 1. Nombres variables originales (x1, x2...)
             for (int i = 0; i < numVarsOriginales; i++)
+            {
                 nombresCols.Add($"x{i + 1}");
+            }
 
-            // 2. Calcular columnas adicionales y generar nombres continuos (x3, x4...)
+            //calcular columnas adicionales
             int contadorVars = numVarsOriginales + 1;
             int numHolguras = 0;
             int numExcesos = 0;
             int numArtificiales = 0;
 
-            // Listas para saber qué columna corresponde a qué tipo
+            //listas para saber qué columna corresponde a que tipo
             List<int> colsArtificiales = new List<int>();
-            List<int> indicesBasicas = new List<int>(); // Guardará el índice de columna de la variable básica de cada fila
+            List<int> indicesBasicas = new List<int>();
 
             foreach (var r in restricciones)
             {
                 if (r.signo == "<=")
                 {
-                    nombresCols.Add($"x{contadorVars}"); // Holgura
-                    indicesBasicas.Add(nombresCols.Count - 1); // Esta es la básica
+                    //holgura
+                    nombresCols.Add($"x{contadorVars}");
+                    indicesBasicas.Add(nombresCols.Count - 1);
                     numHolguras++;
                     contadorVars++;
                 }
                 else if (r.signo == ">=")
                 {
-                    nombresCols.Add($"x{contadorVars}"); // Exceso
+                    //exceso
+                    nombresCols.Add($"x{contadorVars}");
                     numExcesos++;
                     contadorVars++;
 
-                    nombresCols.Add($"x{contadorVars}"); // Artificial
+                    nombresCols.Add($"x{contadorVars}");
                     colsArtificiales.Add(nombresCols.Count - 1);
-                    indicesBasicas.Add(nombresCols.Count - 1); // Esta es la básica
+                    indicesBasicas.Add(nombresCols.Count - 1);
                     numArtificiales++;
                     contadorVars++;
                 }
                 else if (r.signo == "=")
                 {
-                    nombresCols.Add($"x{contadorVars}"); // Artificial
+                    nombresCols.Add($"x{contadorVars}");
                     colsArtificiales.Add(nombresCols.Count - 1);
-                    indicesBasicas.Add(nombresCols.Count - 1); // Esta es la básica
+                    indicesBasicas.Add(nombresCols.Count - 1);
                     numArtificiales++;
                     contadorVars++;
                 }
             }
-            nombresCols.Add("Sol."); // Columna final
+            nombresCols.Add("Sol.");
 
-            // ---------------------------------------------------------
-            // PASO 2: CONSTRUCCIÓN DE LA MATRIZ INICIAL
-            // ---------------------------------------------------------
-            int totalColumnas = nombresCols.Count - 1; // Sin contar la etiqueta "Sol."
+            //matriz incial
+            int totalColumnas = nombresCols.Count - 1;
             double[,] tabla = new double[numRestricciones + 1, totalColumnas + 1];
 
-            // A) Llenar Restricciones
+            //llenamos restricciones
             int colActual = numVarsOriginales;
 
             for (int i = 0; i < numRestricciones; i++)
@@ -96,35 +93,34 @@ namespace INVOP.Logica
                 // Variables extra
                 if (restricciones[i].signo == "<=")
                 {
-                    tabla[i + 1, colActual] = 1; // Holgura
+                    tabla[i + 1, colActual] = 1; //holgura
                     colActual++;
                 }
                 else if (restricciones[i].signo == ">=")
                 {
-                    tabla[i + 1, colActual] = -1; // Exceso
+                    tabla[i + 1, colActual] = -1; //exceso
                     colActual++;
-                    tabla[i + 1, colActual] = 1;  // Artificial
+                    tabla[i + 1, colActual] = 1;  //artificial
                     colActual++;
                 }
                 else if (restricciones[i].signo == "=")
                 {
-                    tabla[i + 1, colActual] = 1;  // Artificial
+                    tabla[i + 1, colActual] = 1;  //artificial
                     colActual++;
                 }
 
-                // Lado Derecho (RHS)
-                tabla[i + 1, totalColumnas] = restricciones[i].rhs;
+                //lado Derecho
+                tabla[i + 1, totalColumnas] = restricciones[i].ld;
             }
 
-            // B) Llenar Fila Z Inicial (Coeficientes originales negativos)
+            //llenar fila z   inicial
             for (int j = 0; j < numVarsOriginales; j++)
             {
                 tabla[0, j] = -funcionZ[j];
             }
 
-            // C) Penalización M en la Tabla
-            // Si MINIMIZAR: Z = ... + M*Art -> Pasa a la izquierda como -M
-            // Si MAXIMIZAR: Z = ... - M*Art -> Pasa a la izquierda como +M
+            //penalizacion m en la Tabla
+
             double penalizacionEnTabla = esMinimizar ? -M : M;
 
             foreach (int colArt in colsArtificiales)
@@ -132,13 +128,12 @@ namespace INVOP.Logica
                 tabla[0, colArt] = penalizacionEnTabla;
             }
 
-            // ---------------------------------------------------------
-            // PASO 3: LIMPIEZA DE LA FILA Z (Eliminar M de las básicas)
-            // ---------------------------------------------------------
+            //eliminar m
             foreach (int colArt in colsArtificiales)
             {
-                // Buscar en qué fila está esta artificial
+                //buscar en que fila esta esta artificial
                 int fila = -1;
+
                 for (int i = 1; i <= numRestricciones; i++)
                 {
                     if (tabla[i, colArt] == 1)
@@ -151,7 +146,8 @@ namespace INVOP.Logica
                 if (fila != -1)
                 {
                     double valorEnZ = tabla[0, colArt];
-                    // Operación: Z_nueva = Z_vieja - (valorEnZ * Fila_Artificial)
+                    
+                    //nueva z
                     for (int j = 0; j <= totalColumnas; j++)
                     {
                         tabla[0, j] = tabla[0, j] - (valorEnZ * tabla[fila, j]);
@@ -159,16 +155,16 @@ namespace INVOP.Logica
                 }
             }
 
-            // Guardar estado inicial (Iteración 0)
             GuardarIteracion(resultado, tabla, 0, indicesBasicas, nombresCols, -1, -1);
 
-            // ---------------------------------------------------------
-            // PASO 4: BUCLE SIMPLEX (Iteraciones)
-            // ---------------------------------------------------------
+            //metodo M aplicado
+            //resolusion simplex
+
+
             int iteracion = 0;
             while (iteracion < MAX_ITERACIONES)
             {
-                // 1. Buscar Columna Pivote
+                //columna Pivote
                 int colPivote = -1;
                 double mejorValor = 0;
 
@@ -177,21 +173,30 @@ namespace INVOP.Logica
                     double val = tabla[0, j];
                     if (esMinimizar)
                     {
-                        // Minimizar: Buscamos el más POSITIVO
-                        if (val > 0.00001 && val > mejorValor) { mejorValor = val; colPivote = j; }
+                        //el mas positivo
+                        if (val > 0.00001 && val > mejorValor)
+                        { 
+                            mejorValor = val;
+                            colPivote = j;
+                        }
                     }
                     else
                     {
-                        // Maximizar: Buscamos el más NEGATIVO
-                        if (val < -0.00001 && val < mejorValor) { mejorValor = val; colPivote = j; }
+                        //max el mas negativo
+                        if (val < -0.00001 && val < mejorValor)
+                        { 
+                            mejorValor = val;
+                            colPivote = j; 
+                        }
                     }
                 }
 
-                if (colPivote == -1) break; // Óptimo encontrado
+                if (colPivote == -1) break; //optimo encontrado
 
-                // 2. Buscar Fila Pivote (Ratio Mínimo Positivo)
+                //fila Pivote
+
                 int filaPivote = -1;
-                double menorRatio = double.MaxValue;
+                double menor = double.MaxValue;
 
                 for (int i = 1; i <= numRestricciones; i++)
                 {
@@ -200,10 +205,10 @@ namespace INVOP.Logica
 
                     if (coef > 0.00001)
                     {
-                        double ratio = rhs / coef;
-                        if (ratio < menorRatio)
+                        double rango = rhs / coef;
+                        if (rango < menor)
                         {
-                            menorRatio = ratio;
+                            menor = rango;
                             filaPivote = i;
                         }
                     }
@@ -211,69 +216,79 @@ namespace INVOP.Logica
 
                 if (filaPivote == -1)
                 {
-                    resultado.MensajeError = "Solución no acotada.";
+                    resultado.MensajeError = "Solución no acotada";
                     return resultado;
                 }
 
-                // Actualizamos la foto anterior con los datos del pivote encontrado
-                var ultimaFoto = resultado.Historial.Last();
-                ultimaFoto.FilaPivote = filaPivote;
-                ultimaFoto.ColumnaPivote = colPivote;
+                //guardamos el pivote encontrado
+                var ultimaIt = resultado.Historial.Last();
+                ultimaIt.FilaPivote = filaPivote;
+                ultimaIt.ColumnaPivote = colPivote;
 
-                // 3. Pivoteo (Gauss-Jordan)
+                //pivoteo
                 double elementoPivote = tabla[filaPivote, colPivote];
 
-                // A) Normalizar fila pivote
+                //convertir en 1 fila pivote
                 for (int j = 0; j <= totalColumnas; j++)
+                {
                     tabla[filaPivote, j] /= elementoPivote;
+                }
 
-                // Actualizar básica
+                //actualizar variables basicass
                 indicesBasicas[filaPivote - 1] = colPivote;
 
-                // B) Hacer ceros
+                //hacer ceros arriba y abajoi
                 for (int i = 0; i <= numRestricciones; i++)
                 {
                     if (i != filaPivote)
                     {
                         double factor = tabla[i, colPivote];
                         for (int j = 0; j <= totalColumnas; j++)
+                        {
                             tabla[i, j] -= factor * tabla[filaPivote, j];
+                        }
                     }
                 }
 
                 iteracion++;
-                // Guardar estado actual
+
+                //guardar estado actual
                 GuardarIteracion(resultado, tabla, iteracion, indicesBasicas, nombresCols, -1, -1);
             }
 
-            // ---------------------------------------------------------
-            // PASO 5: RESULTADOS FINALES
-            // ---------------------------------------------------------
+            // resultado final
             double[] valoresFinales = new double[numVarsOriginales];
+
             for (int i = 0; i < numVarsOriginales; i++)
             {
                 int fila = -1;
                 for (int r = 0; r < indicesBasicas.Count; r++)
                 {
-                    if (indicesBasicas[r] == i) { fila = r + 1; break; }
+                    if (indicesBasicas[r] == i)
+                    { 
+                        fila = r + 1;
+                        break; 
+                    }
                 }
                 valoresFinales[i] = fila != -1 ? tabla[fila, totalColumnas] : 0;
             }
 
             resultado.VariablesDecision = valoresFinales;
 
-            // Recalcular Z real para evitar errores de signo en la tabla
+            //reemplazamos x1 y x2 en z
             double zFinal = 0;
             for (int i = 0; i < numVarsOriginales; i++)
+            {
                 zFinal += funcionZ[i] * valoresFinales[i];
-
+            }
+            
             resultado.ValorZ = zFinal;
             resultado.EsFactible = true;
 
             return resultado;
         }
 
-        // Método auxiliar para clonar la matriz y guardarla
+        //metodo para guardar la matriz
         private void GuardarIteracion(ResultadoSimplex res, double[,] tabla, int iter, List<int> indicesBasicas, List<string> nombresCols, int fPiv, int cPiv)
         {
             int filas = tabla.GetLength(0);
@@ -298,10 +313,10 @@ namespace INVOP.Logica
     public class DatosIteracion
     {
         public int NumeroIteracion { get; set; }
-        public double[,] Matriz { get; set; } // La tabla completa
-        public List<string> NombresColumnas { get; set; } // x1, x2, s1, a1...
-        public List<string> NombresBasicas { get; set; } // Quién está en la base (filas)
-        public int FilaPivote { get; set; } = -1; // Para pintarla de color
-        public int ColumnaPivote { get; set; } = -1; // Para pintarla de color
+        public double[,] Matriz { get; set; }
+        public List<string> NombresColumnas { get; set; }
+        public List<string> NombresBasicas { get; set; }
+        public int FilaPivote { get; set; } = -1;
+        public int ColumnaPivote { get; set; } = -1;
     }
 }
